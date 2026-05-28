@@ -1351,8 +1351,19 @@ func getClient(ctx context.Context, opt *Options) *http.Client {
 		}
 	})
 	return &http.Client{
-		Transport: t,
+		Transport:     t,
+		CheckRedirect: s3CheckRedirect,
 	}
+}
+
+func s3CheckRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	if len(via) > 0 && via[len(via)-1].URL.Host != req.URL.Host {
+		req.Header.Del("X-Amz-Security-Token")
+	}
+	return nil
 }
 
 // Fixup the request if needed.
